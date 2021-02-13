@@ -42,6 +42,8 @@ ROOT_URLCONF = 'meiduo.urls'
 # 指定认证系统模型类
 AUTH_USER_MODEL = 'users.User'
 
+AUTHENTICATION_BACKENDS = ['apps.users.utils.UsernameMobileAuthBackend']
+
 TEMPLATES = [
     # 一定要把jinja2放在前面，否则还是使用的django默认的模版引擎
     {
