@@ -67,4 +67,4 @@ class SMSCodeView(View):
         CCP.send_message(sms_code)
 
         # 响应
-        return http.HttpResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '发送短信成功'})

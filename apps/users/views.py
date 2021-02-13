@@ -40,6 +40,7 @@ class RegisterView(View):
 
         redis_connection = get_redis_connection('verify_code')
         sms_code_server = redis_connection.get(f'sms_{mobile}')
+        redis_connection.delete(f'sms_{mobile}')
         if sms_code_server is None:
             return http.HttpResponseForbidden('未输入短信验证码')
         if sms_code != sms_code_server.decode():
