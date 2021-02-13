@@ -32,6 +32,13 @@ class SMSCodeView(View):
     """短信验证码"""
 
     def get(self, request, mobile):
+        # 创建redis链接
+        redis_connection = get_redis_connection('verify_code')
+
+        # 用于判断60s发送一次
+        send_flag = redis_connection.get(f'send_flag_{mobile}')
+        if send_flag:
+            return http.JsonResponse({'code': RETCODE.THROTTLINGERR, 'errmsg': '发送短信过于频繁'})
 
         # 接收查询参数
         image_code_client = request.GET.get('image_code')
@@ -41,8 +48,6 @@ class SMSCodeView(View):
         if not all([image_code_client, uuid]):
             return http.HttpResponse({'code': RETCODE.NECESSARYPARAMERR, 'errmsg': '缺少必传参数'})
 
-        # 创建redis链接
-        redis_connection = get_redis_connection('verify_code')
         # 提取图片验证码
         image_code_server_bytes = redis_connection.get(uuid)
 
@@ -64,6 +69,8 @@ class SMSCodeView(View):
         sms_code = '%06d' % randint(0, 999999)
         # 存储到redis
         redis_connection.setex(f'sms_{mobile}', 300, sms_code)
+        # 记录已经发送过短信
+        redis_connection.setex(f'send_flag_{mobile}', 60, 1)
         CCP.send_message(sms_code)
 
         # 响应
