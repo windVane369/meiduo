@@ -96,7 +96,15 @@ class LoginView(View):
 
         # 用户登录认证
         user = authenticate(request, username=username, password=password)
+        if not user:
+            return render(request, 'login.html', {'account_errmsg': '用户名或密码错误'})
         # 状态保持
         login(request, user)
+
+        if remembered is None:
+            request.session.set_expiry(0)
+        else:
+            # 设置过期时间，默认为14天，若不需要修改，则else可忽略
+            request.session.set_expiry(7 * 24 * 60 * 60)
 
         return http.HttpResponse('登录成功')
