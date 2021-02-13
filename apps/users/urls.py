@@ -6,4 +6,5 @@ urlpatterns = [
     path('register/', views.RegisterView.as_view()),
     re_path(rf'usernames/(?P<username>{patterns.PATTERN_USERNAME_STR})/count/', views.UsernameCountView.as_view()),
     re_path(rf'mobiles/(?P<mobile>{patterns.PATTERN_MOBILE_STR})/count/', views.MobileCountView.as_view()),
+    path('login/', views.LoginView.as_view()),
 ]

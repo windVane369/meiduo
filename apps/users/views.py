@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views import View
 from django import http
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 import regex as re
 from django_redis import get_redis_connection
 
@@ -42,9 +42,9 @@ class RegisterView(View):
         sms_code_server = redis_connection.get(f'sms_{mobile}')
         redis_connection.delete(f'sms_{mobile}')
         if sms_code_server is None:
-            return http.HttpResponseForbidden('未输入短信验证码')
+            return http.JsonResponse({'code': RETCODE.SMSCODERR, 'errmsg': '未输入短信验证码'})
         if sms_code != sms_code_server.decode():
-            return http.HttpResponseForbidden('验证码输入错误')
+            return http.JsonResponse({'code': RETCODE.SMSCODERR, 'errmsg': '验证码输入错误'})
 
         # create_user 官网推荐
         user = user_models.User.objects.create_user(
@@ -77,3 +77,26 @@ class MobileCountView(View):
         count = user_models.User.objects.filter(mobile=mobile).count()
         # 响应
         return http.JsonResponse({'count': count})
+
+
+class LoginView(View):
+    """登录"""
+
+    def get(self, request):
+        return render(request, 'login.html')
+
+    def post(self, request):
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        remembered = request.POST.get('remembered')
+
+        # 校验
+        if not all([username, password]):
+            return http.HttpResponseForbidden('缺少必传参数')
+
+        # 用户登录认证
+        user = authenticate(request, username=username, password=password)
+        # 状态保持
+        login(request, user)
+
+        return http.HttpResponse('登录成功')
