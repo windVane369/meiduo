@@ -64,13 +64,22 @@ class SMSCodeView(View):
         if image_code_client.lower() != image_code_server.lower():
             return http.JsonResponse({'code': RETCODE.IMAGECODEERR, 'errmsg': '输入图形验证码有误'})
 
+        # 添加redis管道技术
+        # 为什么使用管道？避免大量的操作redis，管道会把待执行的命令打包成一条执行，尽可能减少请求次数
+        # 一般情况下，redis存储对实效性要求没有获取严格，只需要把数据存起来就可以，所以可以使用管道技术
+        # 当存在多个存储指令时使用，单个的时候不要使用
+        pipeline = redis_connection.pipeline()
+
         # 利用容联云平台发短信
         # 随机生成一个6位数作为短信验证码
         sms_code = '%06d' % randint(0, 999999)
+        # redis存储命令加入管道
         # 存储到redis
-        redis_connection.setex(f'sms_{mobile}', 300, sms_code)
+        pipeline.setex(f'sms_{mobile}', 300, sms_code)
         # 记录已经发送过短信
-        redis_connection.setex(f'send_flag_{mobile}', 60, 1)
+        pipeline.setex(f'send_flag_{mobile}', 60, 1)
+        # 执行管道
+        pipeline.execute()
         CCP.send_message(sms_code)
 
         # 响应
