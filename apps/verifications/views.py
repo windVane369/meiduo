@@ -4,8 +4,8 @@ from django_redis import get_redis_connection
 
 from random import randint
 
-from apps.verifications.ccp import CCP
 from apps.verifications import constants
+from celery_tasks.sms.tasks import send_sms_code
 from libs.captcha.captcha import captcha
 from utils.response_code import RETCODE
 
@@ -80,7 +80,8 @@ class SMSCodeView(View):
         pipeline.setex(f'send_flag_{mobile}', 60, 1)
         # 执行管道
         pipeline.execute()
-        CCP.send_message(sms_code)
+        # 调用异步任务
+        send_sms_code.delay(sms_code)
 
         # 响应
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '发送短信成功'})
