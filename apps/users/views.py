@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views import View
 from django import http
 from django.contrib.auth import login, logout, authenticate
@@ -56,7 +56,7 @@ class RegisterView(View):
         # 记录用户登陆状态（状态保持）
         login(request, user)
 
-        return http.HttpResponse('注册成功')
+        return redirect('/')
 
 
 class UsernameCountView(View):
@@ -107,4 +107,4 @@ class LoginView(View):
             # 设置过期时间，默认为14天，若不需要修改，则else可忽略
             request.session.set_expiry(7 * 24 * 60 * 60)
 
-        return http.HttpResponse('登录成功')
+        return redirect('/')
