@@ -128,3 +128,13 @@ class LogoutView(View):
         response.delete_cookie('username')
 
         return response
+
+
+class InfoView(View):
+    """用户中心"""
+
+    def get(self, request):
+        user = request.user
+        if user.is_authenticated:
+            return render(request, 'user_center_info.html')
+        return redirect(reverse('users:login'))
