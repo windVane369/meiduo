@@ -18,3 +18,5 @@ celery_app.config_from_object('celery_tasks.config')
 celery_app.autodiscover_tasks([
     'celery_tasks.sms',
 ])
+
+# celery 启动命令： celery -A celery_tasks.main worker -l info
