@@ -12,6 +12,7 @@ Django==3.1.6
 django-redis==4.12.1
 idna==2.10
 importlib-metadata==3.4.0
+itsdangerous==1.1.0
 Jinja2==2.11.3
 kombu==5.0.2
 MarkupSafe==1.1.1
@@ -19,7 +20,6 @@ Pillow==8.1.0
 prompt-toolkit==3.0.16
 PyMySQL==1.0.2
 pytz==2021.1
-QQLoginTool==0.3.0
 redis==3.5.3
 regex==2020.11.13
 requests==2.25.1
