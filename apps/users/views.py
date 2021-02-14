@@ -109,7 +109,7 @@ class LoginView(View):
 
         request.session.set_expiry(0 if remembered is None else settings.SESSION_COOKIE_AGE)
 
-        response = redirect(reverse('contents:index'))
+        response = redirect(request.GET.get('next') or reverse('contents:index'))
         # 登录时用户名写入cookie，默认值为默认的有效期
         response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
 
@@ -137,4 +137,4 @@ class InfoView(View):
         user = request.user
         if user.is_authenticated:
             return render(request, 'user_center_info.html')
-        return redirect(reverse('users:login'))
+        return redirect('/login/?next=/info/')
