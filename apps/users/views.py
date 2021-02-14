@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.views import View
 from django import http
 from django.contrib.auth import login, logout, authenticate
 import regex as re
 from django_redis import get_redis_connection
+from django.conf import settings
 
 from utils.response_code import RETCODE
 from . import models as user_models
@@ -56,7 +58,11 @@ class RegisterView(View):
         # 记录用户登陆状态（状态保持）
         login(request, user)
 
-        return redirect('/')
+        response = redirect(reverse('contents:index'))
+        # 注册时用户名写入到cookie，使用默认的有效期
+        response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
+
+        return
 
 
 class UsernameCountView(View):
@@ -101,10 +107,10 @@ class LoginView(View):
         # 状态保持
         login(request, user)
 
-        if remembered is None:
-            request.session.set_expiry(0)
-        else:
-            # 设置过期时间，默认为14天，若不需要修改，则else可忽略
-            request.session.set_expiry(7 * 24 * 60 * 60)
+        request.session.set_expiry(0 if remembered is None else settings.SESSION_COOKIE_AGE)
 
-        return redirect('/')
+        response = redirect(reverse('contents:index'))
+        # 登录时用户名写入cookie，默认值为默认的有效期
+        response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
+
+        return response
