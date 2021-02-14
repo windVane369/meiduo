@@ -114,3 +114,17 @@ class LoginView(View):
         response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
 
         return response
+
+
+class LogoutView(View):
+    """退出登录"""
+
+    def get(self, request):
+        # 清除状态保持
+        logout(request)
+
+        response = redirect(reverse('users:login'))
+        # 清除cookie中的username
+        response.delete_cookie('username')
+
+        return response
