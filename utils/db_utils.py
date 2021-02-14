@@ -2,8 +2,8 @@
 from django.db import models
 
 
-class BaseModel(models.BaseModel):
-    id = models.BigAutoField('主键ID', unique=True, editable=False)
+class BaseModel(models.Model):
+    id = models.BigAutoField('主键ID', primary_key=True)
     create_time = models.DateTimeField('创建时间', auto_now_add=True, db_index=True, editable=False)
     update_time = models.DateTimeField('修改时间', auto_now=True, db_index=True, editable=False)
 
