@@ -1,5 +1,6 @@
 import json
 
+from django.db import transaction
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views import View
@@ -52,12 +53,13 @@ class RegisterView(View):
         if sms_code != sms_code_server.decode():
             return http.JsonResponse({'code': RETCODE.SMSCODERR, 'errmsg': '验证码输入错误'})
 
-        # create_user 官网推荐
-        user = user_models.User.objects.create_user(
-            username=username,
-            password=password,
-            mobile=mobile
-        )
+        with transaction.atomic():
+            # create_user 官网推荐
+            user = user_models.User.objects.create_user(
+                username=username,
+                password=password,
+                mobile=mobile
+            )
 
         # 记录用户登陆状态（状态保持）
         login(request, user)
@@ -168,8 +170,9 @@ class EmailView(LoginRequiredView):
         user = request.user
         # 如果用户还没有设置邮箱再去设置，如果设置过了就不要用设置了
         if user.email != email:
-            user.email = email
-            user.save()
+            with transaction.atomic():
+                user.email = email
+                user.save()
 
         # 给当前设置的邮箱发一封激活url
         # # 在此进行对邮箱发送激活邮件

@@ -1,4 +1,5 @@
 from django.contrib.auth import login
+from django.db import transaction
 from django.shortcuts import render, redirect
 from django import http
 from django.views import View
@@ -128,11 +129,13 @@ class QQAuthUserView(View):
             if user.check_password(password) is False:
                 return http.HttpResponseForbidden('绑定的用户信息填写不正确')
         except User.DoesNotExist:
-            # 如果没有查询到,说明此手机号是新的, 创建一个新的user
-            user = User.objects.create_user(username=mobile, password=password, mobile=mobile)
+            with transaction.atomic():
+                # 如果没有查询到,说明此手机号是新的, 创建一个新的user
+                user = User.objects.create_user(username=mobile, password=password, mobile=mobile)
 
-        # 新增oauth_qq表的一个记录
-        OAuthQQUser.objects.create(user=user, openid=openid)
+        with transaction.atomic():
+            # 新增oauth_qq表的一个记录
+            OAuthQQUser.objects.create(user=user, openid=openid)
 
         # 绑定完成即代表登录成,
         login(request, user)
