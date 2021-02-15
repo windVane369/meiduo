@@ -202,3 +202,10 @@ class EmailVerifyView(View):
             user.save()
 
         return redirect(reverse('users:info'))
+
+
+class AddressesView(LoginRequiredView):
+    """收货地址"""
+
+    def get(self, request):
+        return render(request, 'user_center_site.html')
