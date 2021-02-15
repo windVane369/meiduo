@@ -1,4 +1,5 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
+import json
+
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views import View
@@ -8,9 +9,11 @@ import regex as re
 from django_redis import get_redis_connection
 from django.conf import settings
 
+from celery_tasks.email.tasks import send_verify_email
 from utils.response_code import RETCODE
 from . import models as user_models
 from utils import patterns
+from utils.views import LoginRequiredView
 
 
 class RegisterView(View):
@@ -132,7 +135,7 @@ class LogoutView(View):
 
 
 # class InfoView(View):
-#     """用户中心"""
+#     """用户中心 自定义重定向"""
 #
 #     def get(self, request):
 #         user = request.user
@@ -141,9 +144,41 @@ class LogoutView(View):
 #         return redirect('/login/?next=/info/')
 
 
-class InfoView(LoginRequiredMixin, View):
+class InfoView(LoginRequiredView):
     """用户中心"""
     login_url = '/login/'
 
     def get(self, request):
         return render(request, 'user_center_info.html')
+
+
+class EmailView(LoginRequiredView):
+    """设置用户邮箱，并发送激活邮箱url"""
+
+    def put(self, request):
+        # 接收请求体非表单数据
+        json_dict = json.loads(request.body.decode())
+        email = json_dict.get('email')
+
+        # 校验
+        if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+            return http.HttpResponseForbidden('邮箱格式不正确')
+
+        # 修改user模型的email字段
+        user = request.user
+        # 如果用户还没有设置邮箱再去设置，如果设置过了就不要用设置了
+        if user.email != email:
+            user.email = email
+            user.save()
+
+        # 给当前设置的邮箱发一封激活url
+        # # 在此进行对邮箱发送激活邮件
+        # from django.core.mail import send_mail
+        # # send_mail(subject='邮件主题', message='邮件普通内容', from_email='发件人', recipient_list=['收件人'],
+        # #       html_message='邮件超文本内容')
+        # send_mail(subject='美多商城', message='', from_email='美多商城<itcast99@163.com>', recipient_list=[email],
+        #           html_message="<a href='http://www.baidu.com'>百度<a>")
+        verify_url = 'www.baidu.com'
+        send_verify_email.delay(email, verify_url)
+
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '添加邮箱成功'})
