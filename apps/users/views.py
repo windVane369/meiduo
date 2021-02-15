@@ -10,6 +10,7 @@ import regex as re
 from django_redis import get_redis_connection
 from django.conf import settings
 
+from apps.users.utils import generate_email_verify_url, check_email_verify_url
 from celery_tasks.email.tasks import send_verify_email
 from utils.response_code import RETCODE
 from . import models as user_models
@@ -181,7 +182,23 @@ class EmailView(LoginRequiredView):
         # #       html_message='邮件超文本内容')
         # send_mail(subject='美多商城', message='', from_email='美多商城<itcast99@163.com>', recipient_list=[email],
         #           html_message="<a href='http://www.baidu.com'>百度<a>")
-        verify_url = 'www.baidu.com'
+        verify_url = generate_email_verify_url(user)
         send_verify_email.delay(email, verify_url)
 
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '添加邮箱成功'})
+
+
+class EmailVerifyView(View):
+    """激活邮箱"""
+
+    def get(self, request):
+        token = request.GET.get('token')
+        user = check_email_verify_url(token)
+        if user is None:
+            return http.HttpResponseForbidden('token无效')
+
+        with transaction.atomic():
+            user.email_active = True
+            user.save()
+
+        return redirect(reverse('users:info'))
