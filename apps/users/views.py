@@ -218,8 +218,11 @@ class AddressesView(LoginRequiredView):
                 "title": address.title,
                 "receiver": address.receiver,
                 "province": address.province.name,
+                "province_id": address.province.id,
                 "city": address.city.name,
+                "city_id": address.city.id,
                 "district": address.district.name,
+                "district_id": address.district.id,
                 "place": address.place,
                 "mobile": address.mobile,
                 "tel": address.tel,
@@ -234,6 +237,7 @@ class AddressesView(LoginRequiredView):
 
 class AddressCreateView(LoginRequiredView):
     """新增收货地址"""
+
     def post(self, request):
         # 接收参数
         json_dict = json.loads(request.body.decode())
@@ -294,3 +298,65 @@ class AddressCreateView(LoginRequiredView):
         }
 
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '新增地址成功', 'address': address_dict})
+
+
+class UpdateDestroyAddressView(LoginRequiredView):
+    """修改和删除用户收货地址"""
+
+    def put(self, request, address_id):
+        # 接收参数
+        json_dict = json.loads(request.body.decode())
+        receiver = json_dict.get('receiver')
+        province_id = json_dict.get('province_id')
+        city_id = json_dict.get('city_id')
+        district_id = json_dict.get('district_id')
+        place = json_dict.get('place')
+        mobile = json_dict.get('mobile')
+        tel = json_dict.get('tel')
+        email = json_dict.get('email')
+
+        # 校验参数
+        if not all([receiver, province_id, city_id, district_id, place, mobile]):
+            return http.HttpResponseForbidden('缺少必传参数')
+        if not re.match(r'^1[3-9]\d{9}$', mobile):
+            return http.HttpResponseForbidden('参数mobile有误')
+        if tel:
+            if not re.match(r'^(0[0-9]{2,3}-)?([2-9][0-9]{6,7})+(-[0-9]{1,4})?$', tel):
+                return http.HttpResponseForbidden('参数tel有误')
+        if email:
+            if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+                return http.HttpResponseForbidden('参数email有误')
+
+        try:
+            # 重新从数据库查询修改后的收货地址
+            address = Address.objects.get(id=address_id)
+            address.receiver = receiver
+            address.province_id = province_id
+            address.city_id = city_id
+            address.district_id = district_id
+            address.place = place
+            address.mobile = mobile
+            address.tel = tel
+            address.email = email
+            address.save()
+        except Exception:
+            return http.JsonResponse({'code': RETCODE.DBERR, 'errmsg': '更新地址失败'})
+
+        address_dict = {
+            "id": address.id,
+            "title": address.title,
+            "receiver": address.receiver,
+            "province": address.province.name,
+            "province_id": province_id,
+            "city": address.city.name,
+            "city_id": city_id,
+            "district": address.district.name,
+            "district_id": district_id,
+            "place": address.place,
+            "mobile": address.mobile,
+            "tel": address.tel,
+            "email": address.email
+        }
+
+        # 响应更新地址结果
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '更新地址成功', 'address': address_dict})
