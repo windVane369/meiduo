@@ -50,14 +50,17 @@ var vm = new Vue({
                     .then(response => {
                         if (response.data.code == '0') {
                             this.cities = response.data.sub_data.subs;
+                            this.districts = [];
                         } else {
                             console.log(response.data);
                             this.cities = [];
+                            this.districts = [];
                         }
                     })
                     .catch(error => {
                         console.log(error.response);
                         this.cities = [];
+                        this.districts = [];
                     });
             }
         },
