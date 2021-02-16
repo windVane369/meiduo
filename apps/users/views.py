@@ -239,6 +239,9 @@ class AddressCreateView(LoginRequiredView):
     """新增收货地址"""
 
     def post(self, request):
+        count = Address.objects.filter(user=user, is_deleted=False).count()
+        if count >= 20:
+            return http.JsonResponse({'code': RETCODE.THROTTLINGERR, 'errmsg': '收货地址数量超过上限'})
         # 接收参数
         json_dict = json.loads(request.body.decode())
         receiver = json_dict.get('receiver')
@@ -360,3 +363,81 @@ class UpdateDestroyAddressView(LoginRequiredView):
 
         # 响应更新地址结果
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '更新地址成功', 'address': address_dict})
+
+    def delete(self, request, address_id):
+        try:
+            address = Address.objects.get(id=address_id, is_deleted=False, user=request.user)
+        except Address.DoesNotExist:
+            return http.HttpResponseForbidden('address_id有误')
+
+        address.is_deleted = True
+        address.save()
+
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '删除收货地址成功'})
+
+
+class UpdateAddressTitleView(LoginRequiredView):
+    """修改收货地址标题"""
+
+    def put(self, request, address_id):
+        try:
+            address = Address.objects.get(id=address_id, is_deleted=False, user=request.user)
+        except Address.DoesNotExist:
+            return http.HttpResponseForbidden('address_id有误')
+
+        json_dict = json.loads(request.body.decode())
+        title = json_dict.get('title', None)
+        if title is None:
+            return http.HttpResponseForbidden('缺少title')
+
+        address.title = title
+        address.save()
+
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '修改收货地址成功'})
+
+
+class UpdateUserDefaultAddressView(LoginRequiredView):
+    """设置用户默认收货地址"""
+
+    def put(self, request, address_id):
+        try:
+            address = Address.objects.get(id=address_id, is_deleted=False, user=request.user)
+        except Address.DoesNotExist:
+            return http.HttpResponseForbidden('address_id有误')
+
+        user = request.user
+        user.default_address = address
+        user.save()
+
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '设置默认地址成功'})
+
+
+class ChangeUserPasswordView(View):
+    """修改密码"""
+
+    def get(self, request):
+        return render(request, 'user_center_pass.html')
+
+    def post(self, request):
+        old_pwd = request.POST.get('old_pwd')
+        new_pwd = request.POST.get('new_pwd')
+        new_cpwd = request.POST.get('new_cpwd')
+
+        if not all([old_pwd, new_cpwd, new_pwd]):
+            return http.HttpResponseForbidden('缺少必传参数')
+
+        if not request.user.check_password(old_pwd):
+            return render(request, 'user_center_pass.html', {'origin_pwd_errmsg': '原始密码错误'})
+        if not re.match(r'^[0-9A-Za-z]{8,20}$', new_pwd):
+            return http.HttpResponseForbidden('密码最少8位，最长20位')
+        if new_pwd != new_cpwd:
+            return http.HttpResponseForbidden('两次输入的密码不一致')
+
+        request.user.set_password(new_pwd)
+        request.user.save()
+
+        logout(request)
+        response = redirect(reverse('users:login'))
+        response.delete_cookie('username')
+
+        return response
