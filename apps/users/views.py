@@ -209,7 +209,27 @@ class AddressesView(LoginRequiredView):
     """收货地址"""
 
     def get(self, request):
-        return render(request, 'user_center_site.html')
+        addresses = Address.objects.filter(user=request.user, is_deleted=False)
+
+        address_list = []
+        for address in addresses:
+            address_list.append({
+                "id": address.id,
+                "title": address.title,
+                "receiver": address.receiver,
+                "province": address.province.name,
+                "city": address.city.name,
+                "district": address.district.name,
+                "place": address.place,
+                "mobile": address.mobile,
+                "tel": address.tel,
+                "email": address.email
+            })
+        context = {
+            'default_address_id': request.user.default_address_id,
+            'addresses': address_list
+        }
+        return render(request, 'user_center_site.html', context)
 
 
 class AddressCreateView(LoginRequiredView):
