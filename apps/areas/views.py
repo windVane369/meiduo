@@ -22,7 +22,7 @@ class AreasView(View):
                         'name': model.name
                     })
                 cache.set('province_list', province_list, 7 * 60 * 60)
-                return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK', 'province_list': province_list})
+            return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK', 'province_list': province_list})
         else:
             sub_data = cache.get(f'sub_area_{area_id}')
             if not sub_data:
