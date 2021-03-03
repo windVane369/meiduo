@@ -9,13 +9,17 @@ click-didyoumean==0.0.3
 click-plugins==1.1.1
 click-repl==0.1.6
 Django==3.1.6
+django-haystack==3.0
 django-redis==4.12.1
+elasticsearch==2.4.1
+fdfs-client-py==1.2.6
 idna==2.10
 importlib-metadata==3.4.0
 itsdangerous==1.1.0
 Jinja2==2.11.3
 kombu==5.0.2
 MarkupSafe==1.1.1
+mutagen==1.45.1
 Pillow==8.1.0
 prompt-toolkit==3.0.16
 PyMySQL==1.0.2

@@ -24,4 +24,5 @@ urlpatterns = [
     path('', include(('apps.oauth.urls', 'oauth'), namespace='oauth')),
     path('', include(('apps.areas.urls', 'areas'), namespace='areas')),
     path('', include(('apps.goods.urls', 'goods'), namespace='goods')),
+    path('search/', include(('haystack.urls', 'search'), namespace='search')),
 ]
