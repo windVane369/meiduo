@@ -10,6 +10,7 @@ import regex as re
 from django_redis import get_redis_connection
 from django.conf import settings
 
+from apps.goods.models import SKU
 from apps.users.models import Address
 from apps.users.utils import generate_email_verify_url, check_email_verify_url
 from celery_tasks.email.tasks import send_verify_email
@@ -441,3 +442,34 @@ class ChangeUserPasswordView(View):
         response.delete_cookie('username')
 
         return response
+
+
+class UserBrowseHistory(View):
+    """用户浏览记录"""
+
+    def post(self, request):
+        """保存用户浏览记录"""
+        user = request.user
+        if not user.is_authenticated:
+            return http.JsonResponse({"code": RETCODE.SESSIONERR, 'errmsg': '用户未登录'})
+
+        json_dict = json.loads(request.body.decode())
+        sku_id = json_dict.get('sku_id')
+
+        # 校验参数
+        try:
+            SKU.objects.get(id=sku_id)
+        except SKU.DoesNotExist:
+            return http.HttpResponseForbidden('sku不存在')
+
+        redis_conn = get_redis_connection('history')
+        user_id = request.user.id
+
+        pl = redis_conn.pipeline()
+        # 先去重
+        pl.lrem(f'history_{user_id}', 0, sku_id)
+        pl.lpush(f'history_{user_id}', sku_id)
+        pl.ltrim(f'history_{user_id}', 0, 4)
+        pl.execute()
+
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
