@@ -1,10 +1,12 @@
+from datetime import datetime
+
 from django import http
 from django.core.paginator import EmptyPage, Paginator
 from django.shortcuts import render
 from django.views import View
 
 from apps.contents.utils import get_categories
-from apps.goods.models import GoodsCategory, SKU
+from apps.goods.models import GoodsCategory, SKU, GoodsVisitCount
 from apps.goods.utils import get_breadcrumb
 from utils.response_code import RETCODE
 
@@ -130,3 +132,21 @@ class DetailView(View):
         }
 
         return render(request, 'detail.html', context)
+
+
+class DetailVisitView(View):
+    """详情页分类商品访问量"""
+
+    def post(self, request, category_id):
+        try:
+            category = GoodsCategory.objects.get(id=category_id)
+        except GoodsCategory.DoesNotExist:
+            return http.HttpResponseForbidden('缺少必传参数')
+        date = datetime.now()
+        try:
+            visit_obj = GoodsVisitCount.objects.get(date=date, category=category)
+        except GoodsVisitCount.DoesNotExist:
+            visit_obj = GoodsVisitCount(category=category)
+        visit_obj.count += 1
+        visit_obj.save()
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})

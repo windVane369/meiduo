@@ -9,4 +9,6 @@ urlpatterns = [
     re_path('hot/(?P<category_id>\d+)/$', views.HotGoodsView.as_view()),
     # 商品详情页
     re_path('detail/(?P<sku_id>\d+)/$', views.DetailView.as_view()),
+    # 详情页分类商品访问量
+    re_path('visit/(?P<category_id>\d+)/$', views.DetailVisitView.as_view()),
 ]
