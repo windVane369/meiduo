@@ -20,6 +20,7 @@ urlpatterns = [
     path('emails/verification/', views.EmailVerifyView.as_view(), name='verify'),
     path('addresses/', views.AddressesView.as_view(), name='addresses'),
     path('addresses/create/', views.AddressCreateView.as_view(), name='createAddress'),
+    path('browse_histories/', views.UserBrowseHistory.as_view(), name='browseHistories'),
     re_path('addresses/(?P<address_id>\d+)/$', views.UpdateDestroyAddressView.as_view(), name='changeAddress'),
     re_path('addresses/(?P<address_id>\d+)/title/', views.UpdateAddressTitleView.as_view(), name='changeAddressTitle'),
     re_path(

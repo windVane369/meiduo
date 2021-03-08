@@ -458,7 +458,7 @@ class UserBrowseHistory(View):
 
         # 校验参数
         try:
-            SKU.objects.get(id=sku_id)
+            SKU.objects.get(id=sku_id, is_launched=True)
         except SKU.DoesNotExist:
             return http.HttpResponseForbidden('sku不存在')
 
@@ -473,3 +473,21 @@ class UserBrowseHistory(View):
         pl.execute()
 
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
+
+    def get(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return http.JsonResponse({"code": RETCODE.SESSIONERR, 'errmsg': '未登录用户没有商品浏览记录'})
+
+        redis_conn = get_redis_connection('history')
+        sku_ids = redis_conn.lrange(f'history_{user.id}', 0, -1)
+        sku_list = []
+        for sku_id in sku_ids:
+            sku_model = SKU.objects.get(pk=sku_id)
+            sku_list.append({
+                'id': sku_model.id,
+                'default_image_url': sku_model.default_image.url,
+                'name': sku_model.name,
+                'price': sku_model.price
+            })
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK', 'skus': sku_list})
