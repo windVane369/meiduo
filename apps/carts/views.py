@@ -91,4 +91,20 @@ class CartsView(View):
             cart_str = request.COOKIES.get('carts')
             if cart_str:
                 cart_dict = pickle.loads(base64.b64decode(cart_str.encode()))
-        return render(request, 'cart.html')
+
+        # 查询sku模型
+        sku_qs = SKU.objects.filter(id__in=cart_dict.keys())
+        # 包装模版渲染时的数据
+        sku_list = list()
+        for sku_model in sku_qs:
+            count = cart_dict[sku_model.id]['count']
+            sku_list.append({
+                'id': sku_model.id,
+                'name': sku_model.name,
+                'default_image_url': sku_model.default_image.url,
+                'price': str(sku_model.price),
+                'count': count,
+                'selected': str(cart_dict[sku_model.id]['selected']),
+                'amount': str(sku_model.price * count)
+            })
+        return render(request, 'cart.html', {'cart_skus': sku_list})
