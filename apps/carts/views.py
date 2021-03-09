@@ -73,6 +73,55 @@ class CartsView(View):
             response.set_cookie('carts', cart_str)
             return response
 
+    def put(self, request):
+        json_dict = json.loads(request.body.decode())
+        sku_id = json_dict.get('sku_id')
+        count = json_dict.get('count')
+        selected = json_dict.get('selected', True)
+
+        if all([sku_id, count]) is False:
+            return http.HttpResponseForbidden('缺少必传参数')
+
+        try:
+            sku = SKU.objects.get(pk=sku_id, is_launched=True)
+        except SKU.DoesNotExist:
+            return http.HttpResponseForbidden('sku_id不存在')
+
+        try:
+            count = int(count)
+        except Exception as e:
+            logger.error(e)
+            return http.HttpResponseForbidden('参数类型有误')
+
+        if isinstance(selected, bool) is False:
+            return http.HttpResponseForbidden('参数类型有误')
+
+        sku_dict = {
+            'id': sku.id,
+            'name': sku.name,
+            'default_image_url': sku.default_image.url,
+            'price': str(sku.price),
+            'count': count,
+            'selected': selected,
+            'amount': str(sku.price * count)
+        }
+        response = http.JsonResponse({'code': RETCODE.OK, 'errmsg': '修改购物车数据成功', 'cart_sku': sku_dict})
+
+        user = request.user
+        if user.is_authenticated:
+            redis_conn = get_redis_connection('carts')
+            pl = redis_conn.pipeline()
+            pl.hset(f'cart_{user.id}', sku_id, count)
+            if selected:
+                pl.sadd(f'selected_{user.id}', sku_id)
+            else:
+                pl.srem(f'selected_{user.id}', sku_id)
+            pl.execute()
+        else:
+            pass
+
+        return response
+
     def get(self, request):
         user = request.user
         cart_dict = dict()
