@@ -75,18 +75,20 @@ class CartsView(View):
 
     def get(self, request):
         user = request.user
+        cart_dict = dict()
         if user.is_authenticated:
             redis_conn = get_redis_connection('carts')
 
             redis_carts = redis_conn.hgetall(f'cart_{user.id}')
             selected_ids = redis_conn.smembers(f'selected_{user.id}')
 
-            cart_dict = dict()
             for sku_id_bytes in redis_carts:
                 cart_dict[int(sku_id_bytes)] = {
                     'count': int(redis_carts[sku_id_bytes]),
                     'selected': sku_id_bytes in selected_ids
                 }
         else:
-            pass
+            cart_str = request.COOKIES.get('carts')
+            if cart_str:
+                cart_dict = pickle.loads(base64.b64decode(cart_str.encode()))
         return render(request, 'cart.html')
