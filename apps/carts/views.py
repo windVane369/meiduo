@@ -1,10 +1,13 @@
+import base64
 import json
+import pickle
 
 from celery.utils.log import get_task_logger
 from django import http
 from django.views import View
 
 from apps.goods.models import SKU
+from utils.response_code import RETCODE
 
 logger = get_task_logger('django')
 
@@ -37,11 +40,24 @@ class CartsView(View):
 
         user = request.user
         if user.is_authenticated:
-            # 登录用户
+            # 登录用户数据存储到redis中
             pass
         else:
-            # 未登录用户
-            pass
+            # 未登录用户数据存储到cookie中
+            cart_str = request.COOKIES.get('carts')
+            # 判断用户是否已经存在cookie购物车数据
+            if cart_str:
+                cart_dict = pickle.loads(base64.b64decode(cart_str.encode()))
+                # 判断本次要添加的商品是否存在
+                if sku_id in cart_dict:
+                    count += cart_dict[sku_id]['count']
+            else:
+                cart_dict = {}
+            cart_dict[sku_id] = {'count': count, 'selected': selected}
+            cart_str = base64.b64encode(pickle.dumps(cart_dict)).decode()
+            response = http.JsonResponse({'code': RETCODE.OK, 'errmsg': '添加购物车成功'})
+            response.set_cookie('carts', cart_str)
+            return response
 
     def get(self, request):
         pass
