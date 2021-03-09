@@ -4,6 +4,7 @@ import pickle
 
 from celery.utils.log import get_task_logger
 from django import http
+from django.shortcuts import render
 from django.views import View
 from django_redis import get_redis_connection
 
@@ -73,4 +74,19 @@ class CartsView(View):
             return response
 
     def get(self, request):
-        pass
+        user = request.user
+        if user.is_authenticated:
+            redis_conn = get_redis_connection('carts')
+
+            redis_carts = redis_conn.hgetall(f'cart_{user.id}')
+            selected_ids = redis_conn.smembers(f'selected_{user.id}')
+
+            cart_dict = dict()
+            for sku_id_bytes in redis_carts:
+                cart_dict[int(sku_id_bytes)] = {
+                    'count': int(redis_carts[sku_id_bytes]),
+                    'selected': sku_id_bytes in selected_ids
+                }
+        else:
+            pass
+        return render(request, 'cart.html')
