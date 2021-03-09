@@ -5,6 +5,7 @@ import pickle
 from celery.utils.log import get_task_logger
 from django import http
 from django.views import View
+from django_redis import get_redis_connection
 
 from apps.goods.models import SKU
 from utils.response_code import RETCODE
@@ -41,7 +42,16 @@ class CartsView(View):
         user = request.user
         if user.is_authenticated:
             # 登录用户数据存储到redis中
-            pass
+            redis_conn = get_redis_connection('carts')
+            # hincrby 操作hash如果要添加的已经存在，会自动做累加，不存在就新增
+            redis_conn.hincrby(f'cart_{user.id}', sku_id, count)
+
+            # 判断当前商品是否勾选
+            if selected:
+                redis_conn.sadd(f'selected_{user.id}', sku_id)
+            else:
+                redis_conn.srem(f'selected_{user.id}', sku_id)
+            return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '添加购物车数据成功'})
         else:
             # 未登录用户数据存储到cookie中
             cart_str = request.COOKIES.get('carts')
