@@ -43,14 +43,17 @@ class CartsView(View):
         if user.is_authenticated:
             # 登录用户数据存储到redis中
             redis_conn = get_redis_connection('carts')
+
+            pl = redis_conn.pipeline()
             # hincrby 操作hash如果要添加的已经存在，会自动做累加，不存在就新增
-            redis_conn.hincrby(f'cart_{user.id}', sku_id, count)
+            pl.hincrby(f'cart_{user.id}', sku_id, count)
 
             # 判断当前商品是否勾选
             if selected:
-                redis_conn.sadd(f'selected_{user.id}', sku_id)
+                pl.sadd(f'selected_{user.id}', sku_id)
             else:
-                redis_conn.srem(f'selected_{user.id}', sku_id)
+                pl.srem(f'selected_{user.id}', sku_id)
+            pl.execute()
             return http.JsonResponse({'code': RETCODE.OK, 'errmsg': '添加购物车数据成功'})
         else:
             # 未登录用户数据存储到cookie中
